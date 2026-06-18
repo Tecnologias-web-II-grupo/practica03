@@ -16,6 +16,9 @@ root.render(
             <Route path="/" element={<App />} />
             <Route path="/procesar" element={<Procesar />} />
             <Route path="/graficar" element={<GraficaVotos />} />
+            <Route path="/" element={<App />} />
+            <Route path="/procesar" element={<Procesar />} />
+            <Route path="/graficar" element={<GraficaVotos />} />
         </Routes>
     </BrowserRouter>
 );
