@@ -38,6 +38,47 @@ const calcularEstadoCivil = (headers: string[], rows: any[][]): any[] => {
   }));
 };
 
+// Calcula estadística de provincia por sexo biológico
+const calcularProvinciaPorSexo = (headers: string[], rows: any[][]): any[] => {
+  const provinciaIndex = headers.findIndex((h: string) =>
+    h.toLowerCase().includes('provincia')
+  );
+  const sexoIndex = headers.findIndex((h: string) =>
+    h.toLowerCase().includes('sexo') || h.toLowerCase().includes('genero') || h.toLowerCase().includes('género')
+  );
+
+  if (provinciaIndex === -1 || sexoIndex === -1) return [];
+
+  const conteo: Record<string, Record<string, number>> = {};
+  
+  rows.forEach(row => {
+    const provincia = String(row[provinciaIndex] ?? '').trim();
+    const sexo = String(row[sexoIndex] ?? '').trim();
+    
+    if (provincia && sexo) {
+      if (!conteo[provincia]) {
+        conteo[provincia] = {};
+      }
+      conteo[provincia][sexo] = (conteo[provincia][sexo] || 0) + 1;
+    }
+  });
+
+  const resultado: any[] = [];
+  Object.entries(conteo).forEach(([provincia, sexoData]) => {
+    const totalProvincia = Object.values(sexoData).reduce((a: any, b: any) => a + b, 0);
+    Object.entries(sexoData).forEach(([sexo, cantidad]: any) => {
+      resultado.push({
+        provincia,
+        sexo,
+        cantidad,
+        porcentaje: ((cantidad / totalProvincia) * 100).toFixed(2) + '%'
+      });
+    });
+  });
+
+  return resultado;
+};
+
 const Procesar = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -66,6 +107,9 @@ const Procesar = () => {
 
   // Estadística estado civil
   const estadoCivilData = calcularEstadoCivil(headers, rows);
+
+  // Estadística provincia por sexo
+  const provinciaPorSexoData = calcularProvinciaPorSexo(headers, rows);
 
   const customStyle = {
     rows: { style: { minHeight: '50px' } },
@@ -133,6 +177,45 @@ const Procesar = () => {
         </>
       ) : (
         <p className="text-muted">No se encontró columna de estado civil en los datos.</p>
+      )}
+
+      {/* Estadística provincia por sexo */}
+      <h5 className="mt-5">Estadística: Distribución por Provincia y Sexo</h5>
+      {provinciaPorSexoData.length > 0 ? (
+        <table className="table table-striped table-bordered mt-2">
+          <thead className="table-warning">
+            <tr>
+              <th>Provincia</th>
+              <th>Sexo Biológico</th>
+              <th>Cantidad</th>
+              <th>Porcentaje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {provinciaPorSexoData.map((row, i) => (
+              <tr key={i}>
+                <td>{row.provincia}</td>
+                <td>{row.sexo}</td>
+                <td>{row.cantidad}</td>
+                <td>{row.porcentaje}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="text-muted">No se encontraron columnas de provincia y/o sexo en los datos.</p>
+      )}
+
+      {/* Botón para ir a la gráfica de provincia por sexo */}
+      {provinciaPorSexoData.length > 0 && (
+        <button
+          className="btn btn-warning mt-2 mb-4"
+          onClick={() => navigate('/graficar', {
+            state: { provinciaPorSexoData, contenido }
+          })}
+        >
+          Ver Gráfica de Provincia y Sexo
+        </button>
       )}
     </div>
   );
